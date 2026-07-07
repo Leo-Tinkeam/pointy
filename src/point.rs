@@ -2,7 +2,7 @@
 //
 // Copyright (c) 2020-2025  Douglas P Lau
 //
-use crate::float::Float;
+use crate::float::{Float, Num};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -19,47 +19,47 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 /// ```
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Pt<F>
+pub struct Pt<N>
 where
-    F: Float,
+    N: Num,
 {
     /// X coordinate
-    pub x: F,
+    pub x: N,
 
     /// Y coordinate
-    pub y: F,
+    pub y: N,
 }
 
-impl<F> From<&Pt<F>> for Pt<F>
+impl<N> From<&Pt<N>> for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
-    fn from(pt: &Pt<F>) -> Self {
+    fn from(pt: &Pt<N>) -> Self {
         Self { x: pt.x, y: pt.y }
     }
 }
 
-impl<F> From<(F, F)> for Pt<F>
+impl<N> From<(N, N)> for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
-    fn from(pt: (F, F)) -> Self {
+    fn from(pt: (N, N)) -> Self {
         Self { x: pt.0, y: pt.1 }
     }
 }
 
-impl<F> From<[F; 2]> for Pt<F>
+impl<N> From<[N; 2]> for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
-    fn from(pt: [F; 2]) -> Self {
+    fn from(pt: [N; 2]) -> Self {
         Self { x: pt[0], y: pt[1] }
     }
 }
 
-impl<F> Add for Pt<F>
+impl<N> Add for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
     type Output = Self;
 
@@ -71,20 +71,20 @@ where
     }
 }
 
-impl<F> Add<(F, F)> for Pt<F>
+impl<N> Add<(N, N)> for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
     type Output = Self;
 
-    fn add(self, rhs: (F, F)) -> Self {
+    fn add(self, rhs: (N, N)) -> Self {
         self + Self::from(rhs)
     }
 }
 
-impl<F> Sub for Pt<F>
+impl<N> Sub for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
     type Output = Self;
 
@@ -96,24 +96,24 @@ where
     }
 }
 
-impl<F> Sub<(F, F)> for Pt<F>
+impl<N> Sub<(N, N)> for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
     type Output = Self;
 
-    fn sub(self, rhs: (F, F)) -> Self {
+    fn sub(self, rhs: (N, N)) -> Self {
         self - Self::from(rhs)
     }
 }
 
-impl<F> Mul<F> for Pt<F>
+impl<N> Mul<N> for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
     type Output = Self;
 
-    fn mul(self, s: F) -> Self {
+    fn mul(self, s: N) -> Self {
         Self {
             x: self.x * s,
             y: self.y * s,
@@ -121,30 +121,30 @@ where
     }
 }
 
-impl<F> Mul for Pt<F>
+impl<N> Mul for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
-    type Output = F;
+    type Output = N;
 
     /// Get cross product with another vector.
     ///
     /// Returns the signed magnitude of the 3D cross product.
-    fn mul(self, rhs: Self) -> F {
+    fn mul(self, rhs: Self) -> N {
         self.x * rhs.y - self.y * rhs.x
     }
 }
 
-impl<F> Mul<(F, F)> for Pt<F>
+impl<N> Mul<(N, N)> for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
-    type Output = F;
+    type Output = N;
 
     /// Get cross product with another vector.
     ///
     /// Returns the signed magnitude of the 3D cross product.
-    fn mul(self, rhs: (F, F)) -> F {
+    fn mul(self, rhs: (N, N)) -> N {
         self * Self::from(rhs)
     }
 }
@@ -163,9 +163,9 @@ where
     }
 }
 
-impl<F> Neg for Pt<F>
+impl<N> Neg for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
     type Output = Self;
 
@@ -177,21 +177,13 @@ where
     }
 }
 
-impl<F> Pt<F>
+impl<N> Pt<N>
 where
-    F: Float,
+    N: Num,
 {
     /// Create a new point
-    pub fn new(x: F, y: F) -> Self {
+    pub fn new(x: N, y: N) -> Self {
         Self { x, y }
-    }
-
-    /// Create a unit vector from an angle (radians)
-    pub fn from_angle(angle: F) -> Self {
-        Self {
-            x: angle.cos(),
-            y: angle.sin(),
-        }
     }
 
     /// Create a point with minimum component values of two points
@@ -210,6 +202,47 @@ where
         Self { x, y }
     }
 
+    /// Get distance squared to another point
+    pub fn distance_sq<P: Into<Self>>(self, rhs: P) -> N {
+        let v = self - rhs.into();
+        v.x * v.x + v.y * v.y
+    }
+
+    /// Get left-hand perpendicular vector
+    pub fn left(self) -> Self {
+        Self {
+            x: -self.y,
+            y: self.x,
+        }
+    }
+
+    /// Get right-hand perpendicular vector
+    pub fn right(self) -> Self {
+        Self {
+            x: self.y,
+            y: -self.x,
+        }
+    }
+
+    /// Get dot product with another vector
+    pub fn dot<P: Into<Self>>(self, rhs: P) -> N {
+        let rhs = rhs.into();
+        self.x * rhs.x + self.y * rhs.y
+    }
+}
+
+impl<F> Pt<F>
+where
+    F: Float
+{
+    /// Create a unit vector from an angle (radians)
+    pub fn from_angle(angle: F) -> Self {
+        Self {
+            x: angle.cos(),
+            y: angle.sin(),
+        }
+    }
+
     /// Get the magnitude (length) of a vector
     pub fn mag(self) -> F {
         self.x.hypot(self.y)
@@ -223,12 +256,6 @@ where
         } else {
             Self::default()
         }
-    }
-
-    /// Get distance squared to another point
-    pub fn distance_sq<P: Into<Self>>(self, rhs: P) -> F {
-        let v = self - rhs.into();
-        v.x * v.x + v.y * v.y
     }
 
     /// Get distance to another point
@@ -253,28 +280,6 @@ where
         let x = self.x.lerp(rhs.x, t);
         let y = self.y.lerp(rhs.y, t);
         Self { x, y }
-    }
-
-    /// Get left-hand perpendicular vector
-    pub fn left(self) -> Self {
-        Self {
-            x: -self.y,
-            y: self.x,
-        }
-    }
-
-    /// Get right-hand perpendicular vector
-    pub fn right(self) -> Self {
-        Self {
-            x: self.y,
-            y: -self.x,
-        }
-    }
-
-    /// Get dot product with another vector
-    pub fn dot<P: Into<Self>>(self, rhs: P) -> F {
-        let rhs = rhs.into();
-        self.x * rhs.x + self.y * rhs.y
     }
 
     /// Get vector angle in radians
