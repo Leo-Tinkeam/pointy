@@ -3,7 +3,7 @@
 // Copyright (c) 2020-2025  Douglas P Lau
 //
 use crate::bbox::{BBox, Bounded, Bounds};
-use crate::float::Float;
+use crate::float::{Float, Num};
 use crate::line::Line;
 use crate::point::Pt;
 #[cfg(feature = "serde")]
@@ -18,22 +18,27 @@ use serde::{Deserialize, Serialize};
 /// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Seg<F>
+pub struct Seg<N>
 where
-    F: Float,
+    N: Num,
 {
     /// First endpoint
-    pub p0: Pt<F>,
+    pub p0: Pt<N>,
 
     /// Second endpoint
-    pub p1: Pt<F>,
+    pub p1: Pt<N>,
 }
 
-impl<F> Bounded<F> for Seg<F>
+trait Intersect {
+    fn intersects(self, rhs: Self) -> bool;
+}
+
+impl<N> Bounded<N> for Seg<N>
 where
-    F: Float,
+    N: Num,
+    Seg<N>: Intersect,
 {
-    fn bounded_by(self, bbox: BBox<F>) -> bool {
+    fn bounded_by(self, bbox: BBox<N>) -> bool {
         let p0 = bbox.check(self.p0.x, self.p0.y);
         let p1 = bbox.check(self.p1.x, self.p1.y);
         match (p0, p1) {
@@ -86,22 +91,53 @@ where
     }
 }
 
-impl<F> Seg<F>
+impl<N> Seg<N>
 where
-    F: Float,
+    N: Num,
 {
     /// Create a new line segment
     pub fn new<P0, P1>(p0: P0, p1: P1) -> Self
     where
-        P0: Into<Pt<F>>,
-        P1: Into<Pt<F>>,
+        P0: Into<Pt<N>>,
+        P1: Into<Pt<N>>,
     {
         Self {
             p0: p0.into(),
             p1: p1.into(),
         }
     }
+}
 
+// Since we can't do mutually exclusive trait for Integer and Float, this should be repeted for all Integer types
+// It may be better to do a macro that generates this code for each Integer type if we want more types
+impl Intersect for Seg<i32>
+{
+    /// Check if segment intersects with another segment
+    fn intersects(self, rhs: Self) -> bool {
+        Seg::<f64>::new(
+            Pt::<f64>::new(self.p0.x.into(), self.p0.y.into()),
+            Pt::<f64>::new(self.p1.x.into(), self.p1.y.into()),
+        ).intersection(Seg::<f64>::new(
+            Pt::<f64>::new(rhs.p0.x.into(), rhs.p0.y.into()),
+            Pt::<f64>::new(rhs.p1.x.into(), rhs.p1.y.into()),
+        )).is_some()
+    }
+}
+
+impl<F> Intersect for Seg<F>
+where
+    F: Float
+{
+    /// Check if segment intersects with another segment
+    fn intersects(self, rhs: Self) -> bool {
+        self.intersection(rhs).is_some()
+    }
+}
+
+impl<F> Seg<F>
+where
+    F: Float,
+{
     /// Get the distance from the line segment to a point
     pub fn distance<P>(self, pt: P) -> F
     where
@@ -133,11 +169,6 @@ where
         let l1 = Line::new(rhs.p0, rhs.p1);
         l0.intersection(l1)
             .filter(|p| p.bounded_by(BBox::new([rhs.p0, rhs.p1])))
-    }
-
-    /// Check if segment intersects with another segment
-    pub fn intersects(self, rhs: Self) -> bool {
-        self.intersection(rhs).is_some()
     }
 
     /// Clip segment with a bounding box
@@ -182,30 +213,30 @@ where
 }
 
 // Private BBox helper functions
-impl<F> BBox<F>
+impl<N> BBox<N>
 where
-    F: Float,
+    N: Num,
 {
     /// Get edge on X min side
-    fn x_min_edge(self) -> Seg<F> {
+    fn x_min_edge(self) -> Seg<N> {
         let xmn = self.x_min();
         Seg::new((xmn, self.y_min()), (xmn, self.y_max()))
     }
 
     /// Get edge on X max side
-    fn x_max_edge(self) -> Seg<F> {
+    fn x_max_edge(self) -> Seg<N> {
         let xmx = self.x_max();
         Seg::new((xmx, self.y_min()), (xmx, self.y_max()))
     }
 
     /// Get edge on Y min side
-    fn y_min_edge(self) -> Seg<F> {
+    fn y_min_edge(self) -> Seg<N> {
         let ymn = self.y_min();
         Seg::new((self.x_min(), ymn), (self.x_max(), ymn))
     }
 
     /// Get edge on Y max side
-    fn y_max_edge(self) -> Seg<F> {
+    fn y_max_edge(self) -> Seg<N> {
         let ymx = self.y_max();
         Seg::new((self.x_min(), ymx), (self.x_max(), ymx))
     }
