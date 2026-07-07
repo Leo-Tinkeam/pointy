@@ -2,19 +2,19 @@
 //
 // Copyright (c) 2020-2026  Douglas P Lau
 //
-use crate::float::Float;
+use crate::float::{Float, Num};
 use crate::point::Pt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
 /// Trait for comparing a shape with a bounding box
-pub trait Bounded<F>
+pub trait Bounded<N>
 where
-    F: Float,
+    N: Num,
 {
     /// Check if inside a bounding box (at least partially)
-    fn bounded_by(self, bbox: BBox<F>) -> bool;
+    fn bounded_by(self, bbox: BBox<N>) -> bool;
 }
 
 /// Position relative to bounding box, used by [Bounded](trait.Bounded.html)
@@ -53,36 +53,36 @@ pub enum Bounds {
 /// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct BBox<F>
+pub struct BBox<N>
 where
-    F: Float,
+    N: Num,
 {
-    pts: [Pt<F>; 2],
+    pts: [Pt<N>; 2],
 }
 
 /// Iterator for points in a bounding box
-pub struct BBoxIter<F>
+pub struct BBoxIter<N>
 where
-    F: Float,
+    N: Num,
 {
-    pts: [Pt<F>; 2],
+    pts: [Pt<N>; 2],
     i: u8,
 }
 
-impl<F> BBoxIter<F>
+impl<N> BBoxIter<N>
 where
-    F: Float,
+    N: Num,
 {
-    fn new(pts: [Pt<F>; 2]) -> Self {
+    fn new(pts: [Pt<N>; 2]) -> Self {
         Self { pts, i: 0 }
     }
 }
 
-impl<F> Iterator for BBoxIter<F>
+impl<N> Iterator for BBoxIter<N>
 where
-    F: Float,
+    N: Num,
 {
-    type Item = Pt<F>;
+    type Item = Pt<N>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.i == 0 {
@@ -97,74 +97,74 @@ where
     }
 }
 
-impl<F> IntoIterator for BBox<F>
+impl<N> IntoIterator for BBox<N>
 where
-    F: Float,
+    N: Num,
 {
-    type Item = Pt<F>;
-    type IntoIter = BBoxIter<F>;
+    type Item = Pt<N>;
+    type IntoIter = BBoxIter<N>;
 
     fn into_iter(self) -> Self::IntoIter {
         BBoxIter::new(self.pts)
     }
 }
 
-impl<F> Default for BBox<F>
+impl<N> Default for BBox<N>
 where
-    F: Float,
+    N: Num,
 {
     fn default() -> Self {
         // min > max results in no valid bounds
-        let minp = Pt::new(F::max_value(), F::max_value());
-        let maxp = Pt::new(F::min_value(), F::min_value());
+        let minp = Pt::new(N::max_value(), N::max_value());
+        let maxp = Pt::new(N::min_value(), N::min_value());
         let pts = [minp, maxp];
         Self { pts }
     }
 }
 
-impl<F> From<Pt<F>> for BBox<F>
+impl<N> From<Pt<N>> for BBox<N>
 where
-    F: Float,
+    N: Num,
 {
-    fn from(pt: Pt<F>) -> Self {
+    fn from(pt: Pt<N>) -> Self {
         Self { pts: [pt, pt] }
     }
 }
 
-impl<F> From<&Pt<F>> for BBox<F>
+impl<N> From<&Pt<N>> for BBox<N>
 where
-    F: Float,
+    N: Num,
 {
-    fn from(pt: &Pt<F>) -> Self {
+    fn from(pt: &Pt<N>) -> Self {
         Self { pts: [*pt, *pt] }
     }
 }
 
-impl<F, P> From<(P, P)> for BBox<F>
+impl<N, P> From<(P, P)> for BBox<N>
 where
-    F: Float,
-    P: Into<Pt<F>>,
+    N: Num,
+    P: Into<Pt<N>>,
 {
     fn from(pts: (P, P)) -> Self {
         Self::new([pts.0, pts.1])
     }
 }
 
-impl<F, P> From<[P; 2]> for BBox<F>
+impl<N, P> From<[P; 2]> for BBox<N>
 where
-    F: Float,
-    P: Into<Pt<F>> + Copy,
+    N: Num,
+    P: Into<Pt<N>> + Copy,
 {
     fn from(pts: [P; 2]) -> Self {
         Self::new(pts)
     }
 }
 
-impl<F> Bounded<F> for BBox<F>
+impl<N> Bounded<N> for BBox<N>
 where
-    F: Float,
+    N: Num,
 {
-    fn bounded_by(self, bbox: BBox<F>) -> bool {
+    fn bounded_by(self, bbox: BBox<N>) -> bool {
         self.x_min() <= bbox.x_max()
             && self.x_max() >= bbox.x_min()
             && self.y_min() <= bbox.y_max()
@@ -172,15 +172,15 @@ where
     }
 }
 
-impl<F> BBox<F>
+impl<N> BBox<N>
 where
-    F: Float,
+    N: Num,
 {
     /// Create a new axis-aligned bounding box
     pub fn new<I, P>(pts: I) -> Self
     where
         I: IntoIterator<Item = P>,
-        P: Into<Pt<F>>,
+        P: Into<Pt<N>>,
     {
         let mut bbox = Self::default();
         bbox.extend(pts);
@@ -191,7 +191,7 @@ where
     pub fn extend<I, P>(&mut self, pts: I)
     where
         I: IntoIterator<Item = P>,
-        P: Into<Pt<F>>,
+        P: Into<Pt<N>>,
     {
         pts.into_iter().for_each(|p| self.include_pt(p));
     }
@@ -199,7 +199,7 @@ where
     /// Include a point in bounding box
     fn include_pt<P>(&mut self, p: P)
     where
-        P: Into<Pt<F>>,
+        P: Into<Pt<N>>,
     {
         let p = p.into();
         let minp = self.pts[0].with_min(p);
@@ -208,9 +208,9 @@ where
     }
 
     /// Clamp a point to the bounding box
-    pub fn clamp<P>(&self, p: P) -> Pt<F>
+    pub fn clamp<P>(&self, p: P) -> Pt<N>
     where
-        P: Into<Pt<F>>,
+        P: Into<Pt<N>>,
     {
         let p = p.into();
         let x = p.x.clamp(self.x_min(), self.x_max());
@@ -219,47 +219,37 @@ where
     }
 
     /// Get the minimum X value
-    pub fn x_min(self) -> F {
+    pub fn x_min(self) -> N {
         self.pts[0].x
     }
 
-    /// Get the middle X value
-    pub fn x_mid(self) -> F {
-        (self.x_min() + self.x_max()) / (F::one() + F::one())
-    }
-
     /// Get the maximum X value
-    pub fn x_max(self) -> F {
+    pub fn x_max(self) -> N {
         self.pts[1].x
     }
 
     /// Get the minimum Y value
-    pub fn y_min(self) -> F {
+    pub fn y_min(self) -> N {
         self.pts[0].y
     }
 
-    /// Get the middle Y value
-    pub fn y_mid(self) -> F {
-        (self.y_min() + self.y_max()) / (F::one() + F::one())
-    }
-
     /// Get the maximum Y value
-    pub fn y_max(self) -> F {
+    pub fn y_max(self) -> N {
         self.pts[1].y
     }
 
     /// Get the X span
-    pub fn x_span(self) -> F {
+    pub fn x_span(self) -> N {
         self.x_max() - self.x_min()
     }
 
     /// Get the Y span
-    pub fn y_span(self) -> F {
+    pub fn y_span(self) -> N {
         self.y_max() - self.y_min()
     }
 
     /// Check bounds
-    pub fn check(self, x: F, y: F) -> Bounds {
+    pub fn check(self, x: N, y: N) -> Bounds {
         let x = if x < self.x_min() {
             Ordering::Less
         } else if x > self.x_max() {
@@ -288,11 +278,26 @@ where
     }
 }
 
-impl<F> Bounded<F> for Pt<F>
+impl<F> BBox<F>
 where
-    F: Float,
+    F: Float
 {
-    fn bounded_by(self, bbox: BBox<F>) -> bool {
+    /// Get the middle X value
+    pub fn x_mid(self) -> F {
+        (self.x_min() + self.x_max()) / (F::one() + F::one())
+    }
+
+    /// Get the middle Y value
+    pub fn y_mid(self) -> F {
+        (self.y_min() + self.y_max()) / (F::one() + F::one())
+    }
+}
+
+impl<N> Bounded<N> for Pt<N>
+where
+    N: Num,
+{
+    fn bounded_by(self, bbox: BBox<N>) -> bool {
         bbox.check(self.x, self.y) == Bounds::Within
     }
 }

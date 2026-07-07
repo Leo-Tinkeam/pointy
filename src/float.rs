@@ -13,6 +13,7 @@ pub trait Num:
     + Mul<Output = Self>
     + Neg<Output = Self>
     + Sub<Output = Self>
+    + PartialOrd
     + Debug
     + Default
     + Copy
@@ -21,35 +22,76 @@ pub trait Num:
 {
     fn min(self, other: Self) -> Self;
     fn max(self, other: Self) -> Self;
+    fn min_value() -> Self;
+    fn max_value() -> Self;
+    fn clamp(self, min: Self, max: Self) -> Self;/*  {
+        crate::clamp(self, min, max)
+    } */
 }
 
 impl Num for f32 {
-    fn min(self, other: f32) -> f32 {
+    fn min(self, other: Self) -> Self {
         self.min(other)
     }
 
-    fn max(self, other: f32) -> f32 {
+    fn max(self, other: Self) -> Self {
         self.max(other)
+    }
+
+    fn min_value() -> Self {
+        Self::MIN
+    }
+
+    fn max_value() -> Self {
+        Self::MAX
+    }
+
+    fn clamp(self, min: Self, max: Self) -> Self {
+        num_traits::clamp(self, min, max)
     }
 }
 
 impl Num for f64 {
-    fn min(self, other: f64) -> f64 {
+    fn min(self, other: Self) -> Self {
         self.min(other)
     }
 
-    fn max(self, other: f64) -> f64 {
+    fn max(self, other: Self) -> Self {
         self.max(other)
+    }
+
+    fn min_value() -> Self {
+        Self::MIN
+    }
+
+    fn max_value() -> Self {
+        Self::MAX
+    }
+
+    fn clamp(self, min: Self, max: Self) -> Self {
+        num_traits::clamp(self, min, max)
     }
 }
 
 impl Num for i32 {
-    fn min(self, other: i32) -> i32 {
+    fn min(self, other: Self) -> Self {
         Ord::min(self, other)
     }
 
-    fn max(self, other: i32) -> i32 {
+    fn max(self, other: Self) -> Self {
         Ord::max(self, other)
+    }
+
+    fn min_value() -> Self {
+        Self::MIN
+    }
+
+    fn max_value() -> Self {
+        Self::MAX
+    }
+
+    fn clamp(self, min: Self, max: Self) -> Self {
+        num_traits::clamp(self, min, max)
     }
 }
 
