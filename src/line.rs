@@ -2,7 +2,7 @@
 //
 // Copyright (c) 2020-2025  Douglas P Lau
 //
-use crate::float::Float;
+use crate::float::{Float, Num};
 use crate::point::Pt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -16,33 +16,38 @@ use serde::{Deserialize, Serialize};
 /// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Line<F>
+pub struct Line<N>
 where
-    F: Float,
+    N: Num,
 {
     /// First point
-    p0: Pt<F>,
+    p0: Pt<N>,
 
     /// Second point
-    p1: Pt<F>,
+    p1: Pt<N>,
 }
 
-impl<F> Line<F>
+impl<N> Line<N>
 where
-    F: Float,
+    N: Num,
 {
     /// Create a new line
     pub fn new<P0, P1>(p0: P0, p1: P1) -> Self
     where
-        P0: Into<Pt<F>>,
-        P1: Into<Pt<F>>,
+        P0: Into<Pt<N>>,
+        P1: Into<Pt<N>>,
     {
         Self {
             p0: p0.into(),
             p1: p1.into(),
         }
     }
+}
 
+impl<F> Line<F>
+where
+    F: Float
+{
     /// Make canonical line.
     ///
     /// Two canonical lines can be compared for equality.
