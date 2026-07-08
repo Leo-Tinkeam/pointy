@@ -6,10 +6,10 @@ use std::fmt::Debug;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 // TODO: Num should be moved out of this file or the file should be renamed
+/// Number component type
 pub trait Num:
     num_traits::Num
     + Add<Output = Self>
-    + Div<Output = Self>
     + Mul<Output = Self>
     + Neg<Output = Self>
     + Sub<Output = Self>
@@ -20,13 +20,22 @@ pub trait Num:
     + Clone
     + Sized
 {
+    /// Min type value
     fn min(self, other: Self) -> Self;
+
+    /// Max type value
     fn max(self, other: Self) -> Self;
+
+    /// Returns the minimum of two numbers
     fn min_value() -> Self;
+
+    /// Returns the maximum of two numbers
     fn max_value() -> Self;
-    fn clamp(self, min: Self, max: Self) -> Self;/*  {
-        crate::clamp(self, min, max)
-    } */
+
+    /// A value bounded by a minimum and a maximum
+    ///
+    /// If input is less than min then this returns min. If input is greater than max then this returns max. Otherwise this returns input.
+    fn clamp(self, min: Self, max: Self) -> Self;
 }
 
 impl Num for f32 {
@@ -99,6 +108,7 @@ impl Num for i32 {
 pub trait Float:
     num_traits::Float
     + num_traits::FloatConst
+    + Div<Output = Self>
     + Num
 {
     /// Calculate linear interpolation of two values

@@ -13,7 +13,7 @@ mod segment;
 mod transform;
 
 pub use bbox::{BBox, BBoxIter, Bounded, Bounds};
-pub use float::Float;
+pub use float::{Float, Num};
 pub use line::Line;
 pub use point::Pt;
 pub use segment::Seg;
