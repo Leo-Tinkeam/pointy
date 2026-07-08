@@ -2,7 +2,7 @@
 //
 // Copyright (c) 2020-2026  Douglas P Lau
 //
-use crate::float::Float;
+use crate::float::{Float, Num};
 use crate::point::Pt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -29,26 +29,26 @@ use std::ops::{Mul, MulAssign};
 /// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Transform<F>
+pub struct Transform<N>
 where
-    F: Float,
+    N: Num,
 {
     /// First six values in 3x3 matrix (last row assumed to be 0 0 1)
-    e: [F; 6],
+    e: [N; 6],
 }
 
-impl<F> MulAssign for Transform<F>
+impl<N> MulAssign for Transform<N>
 where
-    F: Float,
+    N: Num,
 {
     fn mul_assign(&mut self, rhs: Self) {
         self.e = self.mul_e(&rhs);
     }
 }
 
-impl<F> Mul for Transform<F>
+impl<N> Mul for Transform<N>
 where
-    F: Float,
+    N: Num,
 {
     type Output = Self;
 
@@ -58,79 +58,79 @@ where
     }
 }
 
-impl<F> Mul<Pt<F>> for Transform<F>
+impl<N> Mul<Pt<N>> for Transform<N>
 where
-    F: Float,
+    N: Num,
 {
-    type Output = Pt<F>;
+    type Output = Pt<N>;
 
-    fn mul(self, s: Pt<F>) -> Pt<F> {
+    fn mul(self, s: Pt<N>) -> Pt<N> {
         let x = self.e[0] * s.x + self.e[1] * s.y + self.e[2];
         let y = self.e[3] * s.x + self.e[4] * s.y + self.e[5];
         Pt::new(x, y)
     }
 }
 
-impl<F> Mul<(F, F)> for Transform<F>
+impl<N> Mul<(N, N)> for Transform<N>
 where
-    F: Float,
+    N: Num,
 {
-    type Output = Pt<F>;
+    type Output = Pt<N>;
 
-    fn mul(self, s: (F, F)) -> Pt<F> {
+    fn mul(self, s: (N, N)) -> Pt<N> {
         self * Pt::from(s)
     }
 }
 
-impl<F> Mul<Transform<F>> for Pt<F>
+impl<N> Mul<Transform<N>> for Pt<N>
 where
-    F: Float,
+    N: Num,
 {
-    type Output = Pt<F>;
+    type Output = Pt<N>;
 
-    fn mul(self, t: Transform<F>) -> Self {
+    fn mul(self, t: Transform<N>) -> Self {
         let x = t.e[0] * self.x + t.e[1] * self.y + t.e[2];
         let y = t.e[3] * self.x + t.e[4] * self.y + t.e[5];
         Pt::new(x, y)
     }
 }
 
-impl<F> Mul<Transform<F>> for (F, F)
+impl<N> Mul<Transform<N>> for (N, N)
 where
-    F: Float,
+    N: Num,
 {
-    type Output = Pt<F>;
+    type Output = Pt<N>;
 
-    fn mul(self, t: Transform<F>) -> Pt<F> {
+    fn mul(self, t: Transform<N>) -> Pt<N> {
         Pt::from(self) * t
     }
 }
 
-impl<F> Default for Transform<F>
+impl<N> Default for Transform<N>
 where
-    F: Float,
+    N: Num,
 {
     /// Create a new identity transform.
     fn default() -> Self {
         Self {
             e: [
-                F::one(),
-                F::zero(),
-                F::zero(),
-                F::zero(),
-                F::one(),
-                F::zero(),
+                N::one(),
+                N::zero(),
+                N::zero(),
+                N::zero(),
+                N::one(),
+                N::zero(),
             ],
         }
     }
 }
 
-impl<F> Transform<F>
+impl<N> Transform<N>
 where
-    F: Float,
+    N: Num,
 {
     /// Multiple two affine transforms.
-    fn mul_e(&self, rhs: &Self) -> [F; 6] {
+    fn mul_e(&self, rhs: &Self) -> [N; 6] {
         [
             self.e[0] * rhs.e[0] + self.e[3] * rhs.e[1],
             self.e[1] * rhs.e[0] + self.e[4] * rhs.e[1],
@@ -145,9 +145,9 @@ where
     ///
     /// * `tx` Amount to translate X.
     /// * `ty` Amount to translate Y.
-    pub fn with_translate(tx: F, ty: F) -> Self {
+    pub fn with_translate(tx: N, ty: N) -> Self {
         Self {
-            e: [F::one(), F::zero(), tx, F::zero(), F::one(), ty],
+            e: [N::one(), N::zero(), tx, N::zero(), N::one(), ty],
         }
     }
 
@@ -155,12 +155,35 @@ where
     ///
     /// * `sx` Scale factor for X dimension.
     /// * `sy` Scale factor for Y dimension.
-    pub fn with_scale(sx: F, sy: F) -> Self {
+    pub fn with_scale(sx: N, sy: N) -> Self {
         Self {
-            e: [sx, F::zero(), F::zero(), F::zero(), sy, F::zero()],
+            e: [sx, N::zero(), N::zero(), N::zero(), sy, N::zero()],
         }
     }
 
+    /// Apply translation to a transform.
+    ///
+    /// * `tx` Amount to translate X.
+    /// * `ty` Amount to translate Y.
+    pub fn translate(mut self, tx: N, ty: N) -> Self {
+        self *= Self::with_translate(tx, ty);
+        self
+    }
+
+    /// Apply scaling to a transform.
+    ///
+    /// * `sx` Scale factor for X dimension.
+    /// * `sy` Scale factor for Y dimension.
+    pub fn scale(mut self, sx: N, sy: N) -> Self {
+        self *= Self::with_scale(sx, sy);
+        self
+    }
+}
+
+impl<F> Transform<F>
+where
+    F: Float
+{
     /// Create a new rotation transform.
     ///
     /// * `th` Angle to rotate coordinates (radians).
@@ -182,24 +205,6 @@ where
         Self {
             e: [F::one(), tnx, F::zero(), tny, F::one(), F::zero()],
         }
-    }
-
-    /// Apply translation to a transform.
-    ///
-    /// * `tx` Amount to translate X.
-    /// * `ty` Amount to translate Y.
-    pub fn translate(mut self, tx: F, ty: F) -> Self {
-        self *= Self::with_translate(tx, ty);
-        self
-    }
-
-    /// Apply scaling to a transform.
-    ///
-    /// * `sx` Scale factor for X dimension.
-    /// * `sy` Scale factor for Y dimension.
-    pub fn scale(mut self, sx: F, sy: F) -> Self {
-        self *= Self::with_scale(sx, sy);
-        self
     }
 
     /// Apply rotation to a transform.
