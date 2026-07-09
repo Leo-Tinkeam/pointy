@@ -5,7 +5,6 @@
 use std::fmt::Debug;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-// TODO: Num should be moved out of this file or the file should be renamed
 /// Number component type
 pub trait Num:
     num_traits::Num

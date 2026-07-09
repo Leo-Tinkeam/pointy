@@ -2,7 +2,7 @@
 //
 // Copyright (c) 2020-2025  Douglas P Lau
 //
-use crate::float::{Float, Num};
+use crate::number::{Float, Num};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;

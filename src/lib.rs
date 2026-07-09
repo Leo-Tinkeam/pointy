@@ -6,14 +6,14 @@
 #![warn(missing_docs)]
 
 mod bbox;
-mod float;
+mod number;
 mod line;
 mod point;
 mod segment;
 mod transform;
 
 pub use bbox::{BBox, BBoxIter, Bounded, Bounds};
-pub use float::{Float, Num};
+pub use number::{Float, Num};
 pub use line::Line;
 pub use point::Pt;
 pub use segment::Seg;

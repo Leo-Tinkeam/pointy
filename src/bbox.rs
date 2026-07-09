@@ -2,7 +2,7 @@
 //
 // Copyright (c) 2020-2026  Douglas P Lau
 //
-use crate::float::{Float, Num};
+use crate::number::{Float, Num};
 use crate::point::Pt;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

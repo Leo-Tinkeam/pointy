@@ -3,7 +3,7 @@
 // Copyright (c) 2020-2025  Douglas P Lau
 //
 use crate::bbox::{BBox, Bounded, Bounds};
-use crate::float::{Float, Num};
+use crate::number::{Float, Num};
 use crate::line::Line;
 use crate::point::Pt;
 #[cfg(feature = "serde")]
